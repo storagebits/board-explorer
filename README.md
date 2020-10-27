@@ -1,5 +1,8 @@
+<h1>Board-Explorer is an interactive multigame board based on an IR frame as HID and BBC micro:bits as pawn to play custom games identified by RFID.</h1>
 
-> Open this page at [https://storagebits.github.io/board-explorer/](https://storagebits.github.io/board-explorer/)
+
+
+micro:bit stuffs ...
 
 ## Use as Extension
 
