@@ -20,13 +20,11 @@ var (
 	microbitName = flag.String("m", "", "microbit name")
 )
 
-var (
+/*var (
 	UART_SERVICE_UUID = ble.MustParse(`6E400001-B5A3-F393-E0A9-E50E24DCCA9E`)
 	TX_CHAR_UUID      = ble.MustParse(`6E400002-B5A3-F393-E0A9-E50E24DCCA9E`)
 	RX_CHAR_UUID      = ble.MustParse(`6E400003-B5A3-F393-E0A9-E50E24DCCA9E`)
-)
-
-var c *ble.Characteristic
+)*/
 
 func readJoystick(js joystick.Joystick, messages chan byte) {
 	jinfo, err := js.Read()
@@ -125,6 +123,7 @@ func main() {
 
 	log.Println("connecting...")
 
+	// client 1
 	client, err := ble.Connect(ctx, func(a ble.Advertisement) bool {
 		if a.Connectable() && strings.HasPrefix(a.LocalName(), "BBC micro:bit [tavez]") && strings.Contains(a.LocalName(), *microbitName) {
 			log.Printf("connect to %s", a.LocalName())
@@ -145,21 +144,41 @@ func main() {
 		log.Fatalf("failed to discover profile: %s", err)
 	}
 
-	c = p.FindCharacteristic(ble.NewCharacteristic(RX_CHAR_UUID))
+	c := p.FindCharacteristic(ble.NewCharacteristic(ble.MustParse(`6E400003-B5A3-F393-E0A9-E50E24DCCA9E`)))
 
-	// Init joystick
-	jsid := 0
-	/*if len(os.Args) > 1 {
-		i, err := strconv.Atoi(os.Args[1])
-		if err != nil {
-			fmt.Println(err)
-			return
+	// client 2
+	client2, err := ble.Connect(ctx, func(a ble.Advertisement) bool {
+		if a.Connectable() && strings.HasPrefix(a.LocalName(), "BBC micro:bit [gugap]") && strings.Contains(a.LocalName(), *microbitName) {
+			log.Printf("connect to %s", a.LocalName())
+			return true
 		}
-		jsid = i
-	}*/
+		return false
+	})
+	if err != nil {
+		log.Fatalf("failed to connect: %s", err)
+	}
+	go func() {
+		<-client2.Disconnected()
+		cancel()
+	}()
 
+	p2, err := client2.DiscoverProfile(true)
+	if err != nil {
+		log.Fatalf("failed to discover profile: %s", err)
+	}
+
+	c2 := p2.FindCharacteristic(ble.NewCharacteristic(ble.MustParse(`6E400003-B5A3-F393-E0A9-E50E24DCCA9E`)))
+
+	// Init joysticks
+	jsid := 0
 	js, jserr := joystick.Open(jsid)
+	if jserr != nil {
+		fmt.Println(jserr)
+		return
+	}
 
+	jsid = 1
+	js2, jserr := joystick.Open(jsid)
 	if jserr != nil {
 		fmt.Println(jserr)
 		return
@@ -168,15 +187,21 @@ func main() {
 	ticker := time.NewTicker(time.Millisecond * 40)
 
 	messages := make(chan byte)
+	messages2 := make(chan byte)
 	for {
 		select {
 		case ev := <-messages:
-			log.Printf("Message received")
+			log.Printf("Message received: %b", ev)
 			if err := client.WriteCharacteristic(c, []byte{ev, 0x0a}, true); err != nil {
+				log.Printf("send data: %s", err)
+			}
+		case ev2 := <-messages2:
+			if err := client2.WriteCharacteristic(c2, []byte{ev2, 0x0a}, true); err != nil {
 				log.Printf("send data: %s", err)
 			}
 		case <-ticker.C:
 			go readJoystick(js, messages)
+			go readJoystick(js2, messages2)
 		default:
 			//fmt.Println("no message received")
 		}
