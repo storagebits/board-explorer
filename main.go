@@ -4,6 +4,7 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	evdev "golang-evdev"
 	"log"
 	"os"
 	"os/signal"
@@ -25,6 +26,65 @@ var (
 	TX_CHAR_UUID      = ble.MustParse(`6E400002-B5A3-F393-E0A9-E50E24DCCA9E`)
 	RX_CHAR_UUID      = ble.MustParse(`6E400003-B5A3-F393-E0A9-E50E24DCCA9E`)
 )*/
+
+func readInputEvents(inputDev *evdev.InputDevice, messages chan byte) {
+	var events []evdev.InputEvent
+	var err error
+
+	for {
+		events, err = inputDev.Read()
+		if err != nil {
+			log.Println(err)
+			os.Exit(1)
+		}
+		for i := range events {
+			str := formatEvent(&events[i])
+			log.Println(str)
+		}
+	}
+}
+
+func formatEvent(ev *evdev.InputEvent) string {
+	var res, f, codeName string
+
+	code := int(ev.Code)
+	etype := int(ev.Type)
+
+	switch ev.Type {
+	case evdev.EV_SYN:
+		if ev.Code == evdev.SYN_MT_REPORT {
+			f = "time %d.%-8d +++++++++ %s ++++++++"
+		} else {
+			f = "time %d.%-8d --------- %s --------"
+		}
+		return fmt.Sprintf(f, ev.Time.Sec, ev.Time.Usec, evdev.SYN[code])
+	case evdev.EV_KEY:
+		val, haskey := evdev.KEY[code]
+		if haskey {
+			codeName = val
+		} else {
+			val, haskey := evdev.BTN[code]
+			if haskey {
+				codeName = val
+			} else {
+				codeName = "?"
+			}
+		}
+	default:
+		m, haskey := evdev.ByEventType[etype]
+		if haskey {
+			codeName = m[code]
+		} else {
+			codeName = "?"
+		}
+	}
+
+	evfmt := "time %d.%-8d type %d (%s), code %-3d (%s), value %d"
+	res = fmt.Sprintf(evfmt, ev.Time.Sec, ev.Time.Usec, etype,
+		evdev.EV[int(ev.Type)], ev.Code, codeName, ev.Value)
+
+	return res
+}
 
 func readJoystick(js joystick.Joystick, messages chan byte) {
 	jinfo, err := js.Read()
@@ -105,6 +165,16 @@ func main() {
 
 	log.Printf("Welcome to board-explorer ! have fun :)")
 
+	// Init inputDevice (Multi touch overlay device)
+	var inputDev *evdev.InputDevice
+	var err error
+	messages3 := make(chan byte)
+
+	inputDev, err = evdev.Open("/dev/input/event0")
+	log.Printf("Evdev protocol version: %d\n", inputDev.EvdevVersion)
+	log.Printf("Device name: %s\n", inputDev.Name)
+	go readInputEvents(inputDev, messages3)
+
 	// Init BLE
 	sig := make(chan os.Signal, 1)
 	signal.Notify(sig, syscall.SIGTERM, syscall.SIGINT)
@@ -121,9 +191,9 @@ func main() {
 
 	ble.SetDefaultDevice(device)
 
-	log.Println("connecting...")
+	log.Println("connecting BLE devices...")
 
-	// client 1
+	// BLE client 1
 	client, err := ble.Connect(ctx, func(a ble.Advertisement) bool {
 		if a.Connectable() && strings.HasPrefix(a.LocalName(), "BBC micro:bit [tavez]") && strings.Contains(a.LocalName(), *microbitName) {
 			log.Printf("connect to %s", a.LocalName())
@@ -146,7 +216,7 @@ func main() {
 
 	c := p.FindCharacteristic(ble.NewCharacteristic(ble.MustParse(`6E400003-B5A3-F393-E0A9-E50E24DCCA9E`)))
 
-	// client 2
+	// BLE client 2
 	client2, err := ble.Connect(ctx, func(a ble.Advertisement) bool {
 		if a.Connectable() && strings.HasPrefix(a.LocalName(), "BBC micro:bit [gugap]") && strings.Contains(a.LocalName(), *microbitName) {
 			log.Printf("connect to %s", a.LocalName())
@@ -197,6 +267,10 @@ func main() {
 			}
 		case ev2 := <-messages2:
 			if err := client2.WriteCharacteristic(c2, []byte{ev2, 0x0a}, true); err != nil {
+				log.Printf("send data: %s", err)
+			}
+		case ev3 := <-messages3:
+			if err := client2.WriteCharacteristic(c2, []byte{ev3, 0x0a}, true); err != nil {
 				log.Printf("send data: %s", err)
 			}
 		case <-ticker.C:
