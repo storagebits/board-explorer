@@ -131,6 +131,7 @@ func main() {
 
 	fmt.Printf("Listening for events ...\n")
 
+	laststr := "last"
 	for {
 		events, err = dev.Read()
 		if err != nil {
@@ -139,7 +140,14 @@ func main() {
 		}
 		for i := range events {
 			str := format_event(&events[i])
-			fmt.Println(str)
+			if strings.Contains(str, "ABS_MT_TRACKING_ID") || strings.Contains(str, "ABS_MT_POSITION_X") || strings.Contains(str, "ABS_MT_POSITION_Y") || strings.Contains(str, "SYN") {
+				if !strings.Contains(laststr, "SYN") {
+					fmt.Println(str)
+					laststr = str
+				} else {
+					laststr = "last"
+				}
+			}
 		}
 		time.Sleep(100 * time.Millisecond)
 	}

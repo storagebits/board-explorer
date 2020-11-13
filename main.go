@@ -39,8 +39,11 @@ func readInputEvents(inputDev *evdev.InputDevice, messages chan byte) {
 		}
 		for i := range events {
 			str := formatEvent(&events[i])
-			log.Println(str)
+			/*if strings.Contains(str, "ABS_MT_TRACKING_ID") || strings.Contains(str, "ABS_MT_POSITION_X") || strings.Contains(str, "ABS_MT_POSITION_Y") || strings.Contains(str, "SYN") {
+			if !strings.Contains(laststr, "SYN") {*/
+			fmt.Println(str)
 		}
+		time.Sleep(100 * time.Millisecond)
 	}
 }
 
