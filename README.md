@@ -24,6 +24,10 @@ https://makecode.microbit.org/_5up1Y89u5J5X
 If you need more infos you can check the corresponding repository here :
 https://github.com/storagebits/board-explorer-makecode
 
+## Setting up your USB joystick
+
+In the best way it should just work plug'n'play ! just plug it before launching board-explorer.
+
 ## Build board-explorer
 
 In the bin folder you'll find a binary compiled on a Raspberry Pi with GOARM=5 build option.
