@@ -10,6 +10,19 @@ Base components are Raspberry Pi, micro:bit, arcade controllers and an IR frame 
 
 ## Getting started
 
+## Setting up your micro:bit
+
+board-explorer communicate with micro:bit(s) component(s) via BLE (Bluetooth Low Energy). It sends commands on the BLE UART which are then interpreted localy on the micro:bit. So we need first to flash our micro:bit(s) with the following makecode project :
+
+### Direct link to makecode project 
+https://makecode.microbit.org/_5up1Y89u5J5X
+
+### Repository of the makecode project
+https://github.com/storagebits/board-explorer-makecode
+
+## Build board-explorer
+
+## Run board-explorer
 ```console
 foo@bar:~$ sudo ./board-explorer -player1 microbit1name [-player2 microbit2name]
 ```
