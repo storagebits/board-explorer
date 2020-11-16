@@ -2,7 +2,7 @@
 
 board-explorer is an experimental interactive board project. The aim is to learn mixing electronic components with gaming in mind. Code is provived as is mostly for educational purpose. 
 
-Base components are Raspberry Pi, micro:bit, arcade controllers and an IR frame (optional). 
+Base components are Raspberry Pi, micro:bit, arcade controllers and an IR frame (optional) for localisation. 
 
 **WARNING:** this project is at early stage and is subject to change often.
 
@@ -52,3 +52,16 @@ _note:_ to avoid sudo you could set following setcap rights to board-explorer bi
 ```console
 foo@bar:~$ sudo setcap 'cap_net_raw,cap_net_admin=eip' ./board-explorer
 ```
+
+## What's done ? What's in progress ? What's next ? 
+
+| What's done ?               | What's in progress ?  | What's next ?       |
+|-----------------------------|-----------------------|---------------------|
+| Bluetooth LE support        | IR frame support      | LEDs                |
+| USB arcade joystick support | RFID support          | Scoring             |
+| micro:bit support           |                       | Furnitures / Design |
+
+
+## Educational purpose
+
+This code is provided as is. It is mean to be-reused in other educational projects, classrooms or in any experimental electronic board experience. 
