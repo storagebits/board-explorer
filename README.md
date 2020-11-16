@@ -2,7 +2,7 @@
 
 board-explorer is an experimental interactive board project. The aim is to learn mixing electronic components with gaming in mind. Code is provived as is mostly for educational purpose. 
 
-Base components are Raspberry Pi, micro:bit, arcade controllers and an IR frame (optional) for localisation. 
+Base components are **Raspberry Pi, micro:bit, arcade controllers and an IR frame** (optional) for localisation. 
 
 ## MakeCode
   There's a dedicated repository for the MakeCode associated with this project:
