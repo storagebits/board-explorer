@@ -6,8 +6,11 @@ Base components are Raspberry Pi, micro:bit, arcade controllers and an IR frame 
 
 ## MakeCode
   There's a dedicated repository for the MakeCode associated with this project:
+
   micro:bit Direct link : https://makecode.microbit.org/_frdR5xctm0Rt
+
   Code : https://github.com/storagebits/board-explorer-makecode
+
 
 **WARNING:** this project is at early stage and is subject to change often.
 
