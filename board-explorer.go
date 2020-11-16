@@ -160,7 +160,17 @@ func main() {
 
 	log.Printf("Welcome to board-explorer ! have fun :)")
 
-	// Init inputDevice (Multi touch overlay device)
+	// parse flags
+	microbitName1 := flag.String("microbitName1", "", "Name of microbit 1")
+	microbitName2 := flag.String("microbitName2", "", "Name of microbit 2 (optional)")
+	flag.Parse()
+
+	if *microbitName1 == "" {
+		flag.PrintDefaults()
+		os.Exit(1)
+	}
+
+	// init inputDevice (Multi touch overlay device)
 	/*var inputDev *evdev.InputDevice
 	var err error
 	multiTouchChannel := make(chan byte)
@@ -188,9 +198,9 @@ func main() {
 
 	log.Println("connecting BLE devices...")
 
-	// BLE Player 1
+	// Init Player 1 BLE and joytick
 	player1, err := ble.Connect(ctx, func(a ble.Advertisement) bool {
-		if a.Connectable() && strings.HasPrefix(a.LocalName(), "BBC micro:bit [tavez]") && strings.Contains(a.LocalName(), *microbitName) {
+		if a.Connectable() && strings.HasPrefix(a.LocalName(), "BBC micro:bit ["+*microbitName1+"]") && strings.Contains(a.LocalName(), *microbitName) {
 			log.Printf("connect to %s", a.LocalName())
 			return true
 		}
@@ -212,31 +222,7 @@ func main() {
 	// Select the UART for writing
 	c := p.FindCharacteristic(ble.NewCharacteristic(ble.MustParse(`6E400003-B5A3-F393-E0A9-E50E24DCCA9E`)))
 
-	// BLE player 2
-	player2, err := ble.Connect(ctx, func(a ble.Advertisement) bool {
-		if a.Connectable() && strings.HasPrefix(a.LocalName(), "BBC micro:bit [gugap]") && strings.Contains(a.LocalName(), *microbitName) {
-			log.Printf("connect to %s", a.LocalName())
-			return true
-		}
-		return false
-	})
-	if err != nil {
-		log.Fatalf("failed to connect: %s", err)
-	}
-	go func() {
-		<-player2.Disconnected()
-		cancel()
-	}()
-
-	p2, err := player2.DiscoverProfile(true)
-	if err != nil {
-		log.Fatalf("failed to discover profile: %s", err)
-	}
-
-	// Select the UART for writing
-	c2 := p2.FindCharacteristic(ble.NewCharacteristic(ble.MustParse(`6E400003-B5A3-F393-E0A9-E50E24DCCA9E`)))
-
-	// Init joysticks
+	// Init joystick
 	jsid := 0
 	js, jserr := joystick.Open(jsid)
 	if jserr != nil {
@@ -244,11 +230,42 @@ func main() {
 		return
 	}
 
-	jsid = 1
-	js2, jserr := joystick.Open(jsid)
-	if jserr != nil {
-		fmt.Println(jserr)
-		return
+	// Init player 2 BLE and joystick
+	var player2 ble.Client
+	var c2 *ble.Characteristic
+	var js2 joystick.Joystick
+
+	if *microbitName2 != "" {
+		player2, err := ble.Connect(ctx, func(a ble.Advertisement) bool {
+			if a.Connectable() && strings.HasPrefix(a.LocalName(), "BBC micro:bit ["+*microbitName2+"]") && strings.Contains(a.LocalName(), *microbitName) {
+				log.Printf("connect to %s", a.LocalName())
+				return true
+			}
+			return false
+		})
+		if err != nil {
+			log.Fatalf("failed to connect: %s", err)
+		}
+		go func() {
+			<-player2.Disconnected()
+			cancel()
+		}()
+
+		p2, err := player2.DiscoverProfile(true)
+		if err != nil {
+			log.Fatalf("failed to discover profile: %s", err)
+		}
+
+		// Select the UART for writing
+		c2 = p2.FindCharacteristic(ble.NewCharacteristic(ble.MustParse(`6E400003-B5A3-F393-E0A9-E50E24DCCA9E`)))
+
+		jsid = 1
+		js2, jserr = joystick.Open(jsid)
+		if jserr != nil {
+			fmt.Println(jserr)
+			return
+		}
+
 	}
 
 	ticker := time.NewTicker(time.Millisecond * 40)
