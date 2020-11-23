@@ -18,7 +18,8 @@ import (
 )
 
 var (
-	microbitName = flag.String("m", "", "microbit name")
+	//microbitName         = flag.String("m", "", "microbit name")
+	joystick1, joystick2 = bool(false), bool(false)
 )
 
 func readInputEvents(inputDev *evdev.InputDevice, messages chan byte) {
@@ -200,10 +201,15 @@ func main() {
 
 	// Init Player 1 BLE and joytick
 	player1, err := ble.Connect(ctx, func(a ble.Advertisement) bool {
-		if a.Connectable() && strings.HasPrefix(a.LocalName(), "BBC micro:bit ["+*microbitName1+"]") && strings.Contains(a.LocalName(), *microbitName) {
+		/*if a.Connectable() && strings.HasPrefix(a.LocalName(), "BBC micro:bit ["+*microbitName1+"]") && strings.Contains(a.LocalName(), *microbitName) {
+			log.Printf("connect to %s", a.LocalName())
+			return true
+		}*/
+		if a.Connectable() && strings.HasPrefix(a.LocalName(), "BBC micro:bit ["+*microbitName1+"]") && strings.Contains(a.LocalName(), "") {
 			log.Printf("connect to %s", a.LocalName())
 			return true
 		}
+
 		return false
 	})
 	if err != nil {
@@ -227,7 +233,9 @@ func main() {
 	js, jserr := joystick.Open(jsid)
 	if jserr != nil {
 		fmt.Println(jserr)
-		return
+		//return
+	} else {
+		joystick1 = true
 	}
 
 	// Init player 2 BLE and joystick
@@ -237,7 +245,11 @@ func main() {
 
 	if *microbitName2 != "" {
 		player2, err := ble.Connect(ctx, func(a ble.Advertisement) bool {
-			if a.Connectable() && strings.HasPrefix(a.LocalName(), "BBC micro:bit ["+*microbitName2+"]") && strings.Contains(a.LocalName(), *microbitName) {
+			/*if a.Connectable() && strings.HasPrefix(a.LocalName(), "BBC micro:bit ["+*microbitName2+"]") && strings.Contains(a.LocalName(), *microbitName) {
+				log.Printf("connect to %s", a.LocalName())
+				return true
+			}*/
+			if a.Connectable() && strings.HasPrefix(a.LocalName(), "BBC micro:bit ["+*microbitName2+"]") && strings.Contains(a.LocalName(), "") {
 				log.Printf("connect to %s", a.LocalName())
 				return true
 			}
@@ -263,7 +275,9 @@ func main() {
 		js2, jserr = joystick.Open(jsid)
 		if jserr != nil {
 			fmt.Println(jserr)
-			return
+			//return
+		} else {
+			joystick2 = true
 		}
 
 	}
@@ -288,8 +302,12 @@ func main() {
 			log.Printf("send data: %s", err)
 		}*/
 		case <-ticker.C:
-			go readJoystick(js, channelBlePlayer1)
-			go readJoystick(js2, channelBlePlayer2)
+			if joystick1 {
+				go readJoystick(js, channelBlePlayer1)
+			}
+			if joystick2 {
+				go readJoystick(js2, channelBlePlayer2)
+			}
 		default:
 			//fmt.Println("no message received")
 		}
