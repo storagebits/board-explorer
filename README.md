@@ -1,75 +1,73 @@
 # board-explorer
 
-board-explorer is an experimental interactive board project. The aim is to learn mixing electronic components with gaming in mind. Code is provived as is mostly for educational purpose. 
+An experimental interactive game board: arcade joysticks plugged into a Raspberry Pi drive micro:bit robots over Bluetooth Low Energy. Made to learn how to mix electronics with gaming.
 
-Base components are **Raspberry Pi, micro:bit, arcade controllers and an IR frame** (optional) for localisation. 
+![board-explorer: an arcade joystick in front of a board where two micro:bit robots face each other](images/board-explorer.jpg)
 
-## MakeCode
-  There's a dedicated repository for the MakeCode associated with this project:
+## What it does
 
-  micro:bit Direct link : https://makecode.microbit.org/_frdR5xctm0Rt
+`board-explorer` is a small Go program for the Raspberry Pi. It connects over BLE to one or two micro:bits (one per player), reads one USB arcade joystick per player, and sends each move to that player's micro:bit as a one-letter command on the micro:bit's BLE UART. The micro:bit runs the companion MakeCode program, [board-explorer-makecode](https://github.com/storagebits/board-explorer-makecode), which drives a ring:bit car and its LEDs.
 
-  Code : https://github.com/storagebits/board-explorer-makecode
+| Joystick | Command sent | On the micro:bit |
+|---|---|---|
+| Up | `z` | forward |
+| Down | `s` | back |
+| Left | `q` | turn left |
+| Right | `d` | turn right |
+| Button pressed | `o` | LEDs blink |
+| Button released | `p` | LEDs back to green |
 
+## Status
 
-**WARNING:** this project is at early stage and is subject to change often.
+Prototype, not developed since 2024. The code is provided as is, mostly for educational use.
 
-![board-explorer](https://github.com/storagebits/board-explorer/blob/master/images/board-explorer.jpg?raw=true)
+- Worked in 2020 (as the original README reported; not re-tested on hardware since): BLE connection to up to two micro:bits, USB arcade joysticks, the commands above.
+- Does not build as committed: the 2024 rewrite fails to compile against the current `golang-evdev` (`cannot use ev.Code (variable of type uint16) as int value in map index`, three times in `formatEvent`). Writing `int(ev.Code)` in those three places makes it build again. The repository also has no `go.mod` yet; see Getting started.
+- Not done: the IR frame for locating pieces on the board (the touch-input reader is in the code but not wired in), RFID, scoring, LED strips and the board's furniture.
 
 ## Getting started
 
-### Setting up your micro:bit
+Requirements: a Raspberry Pi with Bluetooth (or any Linux machine with a BLE adapter), a recent Go (tested with 1.23) and a C compiler (the evdev package uses cgo), one or two micro:bits, and one USB joystick per player.
 
-board-explorer communicate with micro:bit(s) component(s) via BLE (Bluetooth Low Energy). It sends commands on the BLE UART which are then interpreted localy on the micro:bit. So we need first to flash our micro:bit(s) with the following makecode project :
+1. **Flash the micro:bits** with the companion program: open https://makecode.microbit.org/_frdR5xctm0Rt and download it to each micro:bit, or import the [board-explorer-makecode](https://github.com/storagebits/board-explorer-makecode) repository in MakeCode. Note each micro:bit's name (the five letters shown by the micro:bit app on Android or iOS).
+2. **Build** (after the `int(ev.Code)` fix above):
 
-#### Direct link to makecode project
+   ```sh
+   git clone https://github.com/storagebits/board-explorer.git && cd board-explorer
+   go mod init board-explorer && go mod tidy
+   go build -o bin/board-explorer .
+   ```
 
-This is the easier way to get started, you can open the makecode project with following link and flash your micro:bit :
-https://makecode.microbit.org/_5up1Y89u5J5X
+3. **Plug in the joysticks** (the first one is player 1), power the micro:bits, then run:
 
-#### Repository of the makecode project
+   ```sh
+   sudo ./bin/board-explorer -microbitName1 <name1> [-microbitName2 <name2>]
+   ```
 
-If you need more infos you can check the corresponding repository here :
-https://github.com/storagebits/board-explorer-makecode
+   BLE needs raw network access. To run without `sudo`, give the binary the capabilities once:
 
-### Setting up your USB joystick
+   ```sh
+   sudo setcap 'cap_net_raw,cap_net_admin=eip' ./bin/board-explorer
+   ```
 
-In the best way it should just work plug'n'play ! just plug it before launching board-explorer.
+## Configuration
 
-## Build board-explorer
+Command-line flags only; there is no configuration file.
 
-In the bin folder you'll find a binary compiled on a Raspberry Pi with GOARM=5 build option.
+| Flag | Purpose |
+|---|---|
+| `-microbitName1` | Name of player 1's micro:bit (required). The program connects to the BLE device advertised as `BBC micro:bit [<name>]`. |
+| `-microbitName2` | Name of player 2's micro:bit (optional). Player 2 uses the second joystick. |
 
-If you're running on a Rapsberry Pi you can run this one (see Run paragraph below) or build your own with following command :
+## Project layout
 
-```console
-foo@bar:~/board-explorer $ go build board-explorer.go -o bin/board-explorer
+```
+board-explorer.go   the whole program: BLE connections, joystick polling every 40 ms, command sending
+images/             photo of the board
 ```
 
-## Run board-explorer
+## Licence and credits
 
-Now it's time to powerup your flashed micro:bit(s) and launch board-explorer :
+Released under the [MIT licence](LICENSE). It is meant to be reused in other educational projects, classrooms or experimental electronic boards.
 
-```console
-foo@bar:~/board-explorer/bin $ sudo ./board-explorer -player1 microbit1name [-player2 microbit2name]
-```
-
-_note:_ You can retrieve your micro:bit name in your Android or IOS micro:bit app
-
-_note:_ to avoid sudo you could set following setcap rights to board-explorer binary :
-```console
-foo@bar:~$ sudo setcap 'cap_net_raw,cap_net_admin=eip' ./board-explorer
-```
-
-## What's done ? What's in progress ? What's next ? 
-
-| What's done ?               | What's in progress ?  | What's next ?       |
-|-----------------------------|-----------------------|---------------------|
-| Bluetooth LE support        | IR frame support      | LEDs                |
-| USB arcade joystick support | RFID support          | Scoring             |
-| micro:bit support           |                       | Furnitures / Design |
-
-
-## Educational purpose
-
-This code is provided as is. It is mean to be-reused in other educational projects, classrooms or in any experimental electronic board experience. 
+Built on [go-ble/ble](https://github.com/go-ble/ble) (BSD 3-Clause), [simulatedsimian/joystick](https://github.com/simulatedsimian/joystick) (MIT) and [gvalkov/golang-evdev](https://github.com/gvalkov/golang-evdev), fetched by `go mod tidy`, not vendored here.
