@@ -23,6 +23,8 @@ Prototype, not developed since 2024. The code is provided as is, mostly for educ
 
 - Worked in 2020 (as the original README reported; not re-tested on hardware since): BLE connection to up to two micro:bits, USB arcade joysticks, the commands above.
 - Does not build as committed: the 2024 rewrite fails to compile against the current `golang-evdev` (`cannot use ev.Code (variable of type uint16) as int value in map index`, three times in `formatEvent`). Writing `int(ev.Code)` in those three places makes it build again. The repository also has no `go.mod` yet; see Getting started.
+- Commands repeat: every 40 ms the program sends `o` or `p` for the button and a letter for a pushed direction. A centred stick sends nothing (never `w`, brake), so the car keeps its last move.
+- The GitHub Actions workflow (`.github/workflows/go.yml`, Go 1.13, `go get` without `go.mod`) dates from 2020; expect it to fail.
 - Not done: the IR frame for locating pieces on the board (the touch-input reader is in the code but not wired in), RFID, scoring, LED strips and the board's furniture.
 
 ## Getting started
