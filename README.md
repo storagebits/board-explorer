@@ -15,7 +15,7 @@ An experimental interactive game board: arcade joysticks plugged into a Raspberr
 | Left | `q` | turn left |
 | Right | `d` | turn right |
 | Button pressed | `o` | LEDs blink |
-| Button released | `p` | LEDs back to green |
+| Button released | `p` | LEDs green (blinking does not stop: see the companion repo's Status) |
 
 ## Status
 
